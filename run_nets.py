@@ -11,7 +11,8 @@ def run_net( ifmap_sram_size=1,
              data_flow = 'os',
              topology_file = './topologies/yolo_v2.csv',
              net_name='yolo_v2',
-             offset_list = [0, 10000000, 20000000]
+             offset_list = [0, 10000000, 20000000],
+             word_size_bytes = 1
             ):
 
     ifmap_sram_size *= 1024
@@ -47,6 +48,7 @@ def run_net( ifmap_sram_size=1,
 
 
     first = True
+    total_clk = 0
     
     for row in param_file:
         if first:
@@ -57,7 +59,7 @@ def run_net( ifmap_sram_size=1,
         #print(len(elems))
         
         # Do not continue if incomplete line
-        if len(elems) < 9:
+        if len(elems) < 8:
             continue
 
         name = elems[0]
@@ -94,7 +96,7 @@ def run_net( ifmap_sram_size=1,
                                 num_filt = num_filters,
                                 strides = strides,
                                 data_flow = data_flow,
-                                word_size_bytes = 1,
+                                word_size_bytes = word_size_bytes,
                                 filter_sram_size = filter_sram_size,
                                 ifmap_sram_size = ifmap_sram_size,
                                 ofmap_sram_size = ofmap_sram_size,
@@ -132,11 +134,14 @@ def run_net( ifmap_sram_size=1,
         util_str = str(util)
         line = name + ",\t" + clk +",\t" + util_str +",\n"
         cycl.write(line)
+        total_clk += int(clk)
 
     bw.close()
     maxbw.close()
     cycl.close()
     param_file.close()
+
+    return total_clk
 
 #if __name__ == "__main__":
 #    sweep_parameter_space_fast()    

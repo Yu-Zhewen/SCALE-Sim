@@ -12,16 +12,22 @@ flags.DEFINE_string("network","./topologies/conv_nets/alexnet.csv","topology tha
 
 
 class scale:
-    def __init__(self, sweep = False, save = False):
+    def __init__(self, sweep = False, save = False, arch = None, network = None, word_size_bytes=1):
         self.sweep = sweep
         self.save_space = save
+        self.arch = arch
+        self.network = network
+        self.word_size_bytes = word_size_bytes
 
     def parse_config(self):
         general = 'general'
         arch_sec = 'architecture_presets'
         net_sec  = 'network_presets'
        # config_filename = "./scale.cfg"
-        config_filename = FLAGS.arch_config
+        if self.arch == None:
+            config_filename = FLAGS.arch_config
+        else:
+            config_filename = self.arch
         print("Using Architechture from ",config_filename)
 
         config = cp.ConfigParser()
@@ -84,13 +90,16 @@ class scale:
         ## For now that is just the topology csv filename
         #topology_file = config.get(net_sec, 'TopologyCsvLoc')
         #self.topology_file = topology_file.split('"')[1]     #Config reads the quotes as wells
-        self.topology_file= FLAGS.network
+        if self.network == None:
+            self.topology_file= FLAGS.network
+        else:
+            self.topology_file = self.network
 
     def run_scale(self):
         self.parse_config()
 
         if self.sweep == False:
-            self.run_once()
+            return self.run_once()
         else:
             self.run_sweep()
 
@@ -118,7 +127,7 @@ class scale:
         #print("Net name = " + net_name)
         offset_list = [self.ifmap_offset, self.filter_offset, self.ofmap_offset]
 
-        r.run_net(  ifmap_sram_size  = int(self.isram_min),
+        total_clk = r.run_net(  ifmap_sram_size  = int(self.isram_min),
                     filter_sram_size = int(self.fsram_min),
                     ofmap_sram_size  = int(self.osram_min),
                     array_h = int(self.ar_h_min),
@@ -126,10 +135,13 @@ class scale:
                     net_name = net_name,
                     data_flow = self.dataflow,
                     topology_file = self.topology_file,
-                    offset_list = offset_list
+                    offset_list = offset_list,
+                    word_size_bytes = self.word_size_bytes
                 )
         self.cleanup()
         print("************ SCALE SIM Run Complete ****************")
+
+        return total_clk
 
 
     def cleanup(self):
