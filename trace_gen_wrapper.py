@@ -97,12 +97,13 @@ def gen_all_traces(
 
     print("Average utilization : \t"  + str(util) + " %")
     print("Cycles for compute  : \t"  + str(sram_cycles) + " cycles")
-    bw_numbers, detailed_log  = gen_bw_numbers(dram_ifmap_trace_file, dram_filter_trace_file,
+    bw_numbers, detailed_log, dram_cycles  = gen_bw_numbers(dram_ifmap_trace_file, dram_filter_trace_file,
                                  dram_ofmap_trace_file, sram_write_trace_file,
                                  sram_read_trace_file)
                                  #array_h, array_w)
+    print("Cycles including DRAM  : \t"  + str(dram_cycles) + " cycles")
 
-    return bw_numbers, detailed_log, util, sram_cycles
+    return bw_numbers, detailed_log, util, sram_cycles, dram_cycles
 
 
 def gen_max_bw_numbers( dram_ifmap_trace_file, dram_filter_trace_file,
@@ -333,7 +334,7 @@ def gen_bw_numbers( dram_ifmap_trace_file, dram_filter_trace_file,
     #log += str(min_clk) + ",\t" + str(max_clk) + ","
     #print(log)
     #return log, avg_util
-    return log, detailed_log
+    return log, detailed_log, str(int(delta_clk))
 
 
 #def parse_sram_read_data(elems, array_h, array_w):

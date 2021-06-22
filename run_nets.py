@@ -12,7 +12,8 @@ def run_net( ifmap_sram_size=1,
              topology_file = './topologies/yolo_v2.csv',
              net_name='yolo_v2',
              offset_list = [0, 10000000, 20000000],
-             word_size_bytes = 1
+             word_size_bytes = 1,
+             include_dram_cycles = True
             ):
 
     ifmap_sram_size *= 1024
@@ -36,7 +37,7 @@ def run_net( ifmap_sram_size=1,
 
     bw.write("IFMAP SRAM Size,\tFilter SRAM Size,\tOFMAP SRAM Size,\tConv Layer Num,\tDRAM IFMAP Read BW,\tDRAM Filter Read BW,\tDRAM OFMAP Write BW,\tSRAM Read BW,\tSRAM OFMAP Write BW, \n")
     maxbw.write("IFMAP SRAM Size,\tFilter SRAM Size,\tOFMAP SRAM Size,\tConv Layer Num,\tMax DRAM IFMAP Read BW,\tMax DRAM Filter Read BW,\tMax DRAM OFMAP Write BW,\tMax SRAM Read BW,\tMax SRAM OFMAP Write BW,\n")
-    cycl.write("Layer,\tCycles,\t% Utilization,\n")
+    cycl.write("Layer,\tSRAM Cycles,\tDRAM Cycles,\t% Utilization,\n")
     detailed_log = "Layer," +\
                  "\tDRAM_IFMAP_start,\tDRAM_IFMAP_stop,\tDRAM_IFMAP_bytes," + \
                  "\tDRAM_Filter_start,\tDRAM_Filter_stop,\tDRAM_Filter_bytes," + \
@@ -48,8 +49,9 @@ def run_net( ifmap_sram_size=1,
 
 
     first = True
-    total_clk = 0
-    
+    total_dram_cycles = 0
+    total_sram_cycles = 0
+
     for row in param_file:
         if first:
             first = False
@@ -85,7 +87,7 @@ def run_net( ifmap_sram_size=1,
         max_bw_log = bw_log
         detailed_log = name + ",\t"
 
-        bw_str, detailed_str, util, clk =  \
+        bw_str, detailed_str, util, sram_cycles, dram_cycles =  \
             tg.gen_all_traces(  array_h = array_h,
                                 array_w = array_w,
                                 ifmap_h = ifmap_h,
@@ -131,17 +133,21 @@ def run_net( ifmap_sram_size=1,
         #clk = str(last_line).split(',')[0]
         #clk = str(clk).split("'")[1]
 
+
         util_str = str(util)
-        line = name + ",\t" + clk +",\t" + util_str +",\n"
+        line = name + ",\t" + sram_cycles +",\t" + dram_cycles +",\t" +  util_str +",\n"
         cycl.write(line)
-        total_clk += int(clk)
+
+        assert int(dram_cycles) > int(sram_cycles)
+        total_dram_cycles += int(dram_cycles)
+        total_sram_cycles += int(sram_cycles)
 
     bw.close()
     maxbw.close()
     cycl.close()
     param_file.close()
 
-    return total_clk
+    return total_dram_cycles, total_sram_cycles
 
 #if __name__ == "__main__":
 #    sweep_parameter_space_fast()    
